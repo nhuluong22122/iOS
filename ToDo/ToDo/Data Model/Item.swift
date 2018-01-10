@@ -2,13 +2,16 @@
 //  Item.swift
 //  ToDo
 //
-//  Created by Nhu Luong on 1/4/18.
+//  Created by Nhu Luong on 1/5/18.
 //  Copyright © 2018 Nhu Luong. All rights reserved.
 //
 
 import Foundation
+import RealmSwift
 
-class Item : Codable {
-    var title : String = ""
-    var done : Bool = false
+class Item : Object {
+    @objc dynamic var title : String = ""
+    @objc dynamic var done : Bool = false
+    @objc dynamic var dateCreated: Date?
+    var parentCategory = LinkingObjects(fromType: Category.self, property: "items")
 }

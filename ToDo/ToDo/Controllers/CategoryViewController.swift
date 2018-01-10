@@ -7,23 +7,22 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
-    var categoryArray = [Category]()
 
-     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
+    var categoryArray : Results<Category>?
+    let realm = try! Realm()
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadItems()
+        load()
     }
     //MARK : - TableView Datasource Methods
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         
-        let item = categoryArray[indexPath.row]
-        cell.textLabel?.text = item.name
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
         return cell
     }
 
@@ -36,13 +35,13 @@ class CategoryViewController: UITableViewController {
         var textField = UITextField()
         let alert = UIAlertController(title: "Add New Category", message: "", preferredStyle: .alert)
         
-        let action = UIAlertAction(title: "Add Category", style: .default) { (action) in
+        let action = UIAlertAction(title: "Add", style: .default) { (action) in
             
-            let newItem = Category(context: self.context)
-            newItem.name = textField.text!
-            self.categoryArray.append(newItem)
+            let c = Category()
+            c.name = textField.text!
+//            self.categoryArray?.append(c)
             //Don't use UserDefaults for complex case. Mostly simple cases like volume up down should be good
-            self.saveItems()
+            self.save(category: c)
         }
         
         alert.addTextField { (alertTextField) in
@@ -59,7 +58,8 @@ class CategoryViewController: UITableViewController {
     //MARK : TableView Delegate Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryArray.count
+        //if it's not null return count -> if null -> return 1
+        return categoryArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -70,13 +70,15 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         //Get the index path of selected row
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categoryArray?[indexPath.row]
         }
     }
-    func saveItems(){
+    func save(category: Category){
         do {
             //All the changes will be made here
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         }
         catch {
             print("Error saving context, \(error)")
@@ -84,13 +86,8 @@ class CategoryViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadItems(with request: NSFetchRequest<Category> = Category.fetchRequest()){
-        do {
-            categoryArray = try context.fetch(request)
-        }
-        catch {
-            print("Error fetching data from context \(error)")
-        }
+    func load(){
+        categoryArray = realm.objects(Category.self)
         tableView.reloadData()
         
     }
